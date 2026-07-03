@@ -28,11 +28,52 @@ document.addEventListener("DOMContentLoaded", () => {
                   `<li data-email="${participant}"><span class="participant-name">${participant}</span> <button class="participant-remove" data-activity="${name}" data-email="${participant}" title="Remove participant">✕</button></li>`
               )
               .join("")}</ul>`
+        const spotsLeft = details.max_participants - details.participants.length;
+        const escapeHtml = (value) =>
+          String(value).replace(/[&<>"']/g, (c) => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;",
+          }[c]));
+
+        const participantsMarkup = details.participants.length
+          ? `<ul class="participants-list">${details.participants
+              .map((participant) => {
+                const safeText = escapeHtml(participant);
+                const safeActivityText = escapeHtml(name);
+                const encodedParticipant = encodeURIComponent(participant);
+                const encodedActivity = encodeURIComponent(name);
+                return `<li data-email="${encodedParticipant}"><span class="participant-name">${safeText}</span> <button class="participant-remove" data-activity="${encodedActivity}" data-email="${encodedParticipant}" title="Remove participant" aria-label="Remove ${safeText} from ${safeActivityText}">✕</button></li>`;
+              })
+              .join("")}</ul>`
           : '<p class="participants-empty">No participants yet</p>';
 
         activityCard.innerHTML = `
           <h4>${name}</h4>
           <p>${details.description}</p>
+          <p><strong>Schedule:</strong> ${details.schedule}</p>
+          <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
+          <div class="participants-section">
+            <p class="participants-title"><strong>Participants:</strong></p>
+            ${participantsMarkup}
+          </div>
+        `;
+
+        activitiesList.appendChild(activityCard);
+
+        // Attach handlers to remove buttons inside this card
+        activityCard.querySelectorAll('.participant-remove').forEach((btn) => {
+          btn.addEventListener('click', async (e) => {
+            const email = decodeURIComponent(btn.dataset.email);
+            const activityName = decodeURIComponent(btn.dataset.activity);
+
+            try {
+              const response = await fetch(
+                `/activities/${encodeURIComponent(activityName)}/signup?email=${encodeURIComponent(email)}`,
+                { method: 'DELETE' }
+              );
           <p><strong>Schedule:</strong> ${details.schedule}</p>
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
           <div class="participants-section">
